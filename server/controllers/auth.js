@@ -56,65 +56,121 @@ exports.registerUser = async (req, res) => {
 
 
 // controller for login
+// exports.loginUser = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // validate
+//     if (!email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Please fill all required fields",
+//       });
+//     }
+
+//     // check user
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not registered. Please sign up first",
+//       });
+//     }
+
+//     // check password
+//     const isPasswordCorrect = await bcrypt.compare(password, user.password);
+//     if (!isPasswordCorrect) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Password is incorrect",
+//       });
+//     }
+
+//     // generate token
+//     const token = jwt.sign(
+//       {
+//         id: user._id,
+//         email: user.email,
+//       },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "24h" }
+//     );
+
+//     user.password = undefined;
+
+//     const options = {
+//       expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+//       httpOnly: true,
+//     };
+
+//     return res.cookie("token", token, options).status(200).json({
+//       success: true,
+//       message: "User logged in successfully",
+//       token,
+//       user,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Login failed. Please try again.",
+//     });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+//new code for controller
+// Login Controller
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // validate
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please fill all required fields",
-      });
+      return res.status(400).json({ success: false, message: "Fill all fields" });
     }
 
-    // check user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not registered. Please sign up first",
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // check password
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(401).json({
-        success: false,
-        message: "Password is incorrect",
-      });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // generate token
     const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-      },
+      { id: user._id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
     user.password = undefined;
 
+    // CRITICAL FIX: Cookie options for Vercel
     const options = {
       expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       httpOnly: true,
+      secure: true,      // Must be true for HTTPS
+      sameSite: "none",  // Must be "none" for cross-domain
+      path: "/",
     };
 
     return res.cookie("token", token, options).status(200).json({
       success: true,
-      message: "User logged in successfully",
+      message: "Logged in successfully",
       token,
       user,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      success: false,
-      message: "Login failed. Please try again.",
-    });
+    return res.status(500).json({ success: false, message: "Login failed" });
   }
 };
 
@@ -141,12 +197,34 @@ exports.getMe = async (req, res) => {
 
 
 // logout
-exports.logoutUser = (req, res) => {
-  // clear the cookie
-  res.cookie("token", "", {
-    expires: new Date(0), 
-    httpOnly: true,
+// exports.logoutUser = (req, res) => {
+//   // clear the cookie
+//   res.cookie("token", "", {
+//     expires: new Date(0), 
+//     httpOnly: true,
     
+//   });
+
+//   return res.status(200).json({
+//     success: true,
+//     message: "Logged out successfully",
+//   });
+// };
+
+
+
+
+
+
+//new code for logout
+// Logout Controller
+exports.logoutUser = (req, res) => {
+  res.cookie("token", "", {
+    expires: new Date(0),
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
   });
 
   return res.status(200).json({
